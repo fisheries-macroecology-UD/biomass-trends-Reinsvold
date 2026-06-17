@@ -14,57 +14,57 @@
   
   # abundance data
 
-    biomass_dat <- get_latest_metrics(metrics = "Abundance")
+		# pull all output from the latest full assessment for each stock
+    biomass_dat <- get_latest_full_assessment()
+    
+    # the result is a list of the data and a summary, we want to pull the data 
     biomass_dat <- biomass_dat$data
-
+    
+    # look at all columns 
 		glimpse(biomass_dat)
-		length(unique(biomass_dat$ITIS))
+		
+		# how many stocks are included
+		length(unique(biomass_dat$itis))
+		
+	# missing data
+	biomass_dat |> 
+  		summarise(across(everything(), ~sum(is.na(.)))) |> 
+  		pivot_longer(everything(), names_to = "column", values_to = "n_na") |> 
+  		filter(n_na > 0)
 		
 		biomass_dat <- biomass_dat |>
-			select(StockName, CommonName, StockArea,
-  				 AssessmentYear, Year, Value, Description,
-  				 Units, ScientificName, Jurisdiction) |>
+			select(stock_name, common_name, stock_area,
+  				 assessment_year, regional_ecosystem,
+					 year, value, description, units, 
+					 scientific_name, jurisdiction,
+					 assessment_type) |>
 			drop_na()
 		
-		unique(biomass_dat$Jurisdiction)
+		ecosystems <- unique(biomass_dat$regional_ecosystem)
 		
+	reg <- grep("Northeast|Alaska|Cal|Southeast|Gulf", ecosystems, value = TRUE)		
+	
+	biomass_dat <- biomass_dat |>
+		filter(regional_ecosystem %in% reg)
+
 	# fix Northern rockfish
 		
 	nrf <- biomass_dat |>
-		filter(CommonName == "Northern rockfish")
+		filter(common_name == "Northern rockfish")
 	
-	nrf$Value[nrf$Value == 48630.00] <- 148630.00
+	nrf$value[nrf$value == 48630.00] <- 148630.00
 	
 	biomass_dat <- biomass_dat |>
-		filter(CommonName != "Northern rockfish")
+		filter(common_name != "Northern rockfish")
 	
 	biomass_dat <- bind_rows(biomass_dat, nrf)
 
-
-	biomass_EBS <- biomass_dat |>
-  	filter(str_detect(StockArea, "Bering Sea")) |>
-  	select(StockName, CommonName, StockArea,
-  				 AssessmentYear, Year, Value, Description,
-  				 ScientificName, Units)
- 
-	 unique(biomass_EBS$CommonName)
-	 
-	 names(biomass_EBS) <- tolower(names(biomass_EBS))
-	 
 	# remove metrics other than SSB
 	 biomass_EBS <- biomass_EBS |>
 	 	filter(description != "Survey-Estimated Biomass")
  
-	 # add temperature data to biomass data
-	 
-	# read in yearly-averaged bottom temperature from Bering10K
-  btemp <- read_csv("./data/yearly_btemp_B10K.csv")
-  
-  # merge data sets
-  
-  biomass_envr_dat <- left_join(biomass_EBS, btemp)
 
-  # black theme
+ 
   # black theme
 	black_theme <- function(x = 12, y = 14, z = 16) {
   	theme(legend.position = "none",
