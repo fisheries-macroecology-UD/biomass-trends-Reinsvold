@@ -9,6 +9,8 @@
 	library(here)
 	library(dsem)
 	
+	`%!in%` <- Negate(`%in%`)
+	
 	#### 1. download biomass data from stock smart using the R package ####
 
   
@@ -31,8 +33,14 @@
   		summarise(across(everything(), ~sum(is.na(.)))) |> 
   		pivot_longer(everything(), names_to = "column", values_to = "n_na") |> 
   		filter(n_na > 0)
-		
-		biomass_dat <- biomass_dat |>
+	
+	NAs <- biomass_dat |>
+		filter(is.na(common_name))
+	
+	## looks like ~3500 rows have NAs for names, many of these are species complexes
+	## there is also black grouper but its data is not separated between GOM and SA so do not retain
+	
+	biomass_dat <- biomass_dat |>
 			select(stock_name, common_name, stock_area,
   				 assessment_year, regional_ecosystem,
 					 year, value, description, units, 
@@ -40,7 +48,8 @@
 					 assessment_type) |>
 			drop_na()
 		
-		ecosystems <- unique(biomass_dat$regional_ecosystem)
+
+	ecosystems <- unique(biomass_dat$regional_ecosystem)
 		
 	reg <- grep("Northeast|Alaska|Cal|Southeast|Gulf", ecosystems, value = TRUE)		
 	
@@ -59,10 +68,41 @@
 	
 	biomass_dat <- bind_rows(biomass_dat, nrf)
 
-	# remove metrics other than SSB
-	 biomass_EBS <- biomass_EBS |>
-	 	filter(description != "Survey-Estimated Biomass")
- 
+	unique(biomass_dat$description)
+	
+	# lots of different units of 'biomass' - need to figure out which one(s) to use
+	
+	# first step - available metrics in each area
+	
+	sum_stocks <- biomass_dat |>
+		group_by(regional_ecosystem) |>
+		summarise(n_distinct(stock_name))
+	
+	tmp <- biomass_dat |>
+		filter(grepl("Biomass", description)) |>
+		group_by(regional_ecosystem, stock_name) |>
+		summarise(biomass_type = str_flatten_comma(unique(description)), 
+    .groups = "drop"
+  )
+	
+	unique(tmp$description)
+	
+	biomass_dat <- biomass_dat |>
+		filter(grepl("Biomass", description))
+
+	# we want to remove any metrics of biomass that differ largely from SSB
+	biomass_metrics <- unique(biomass_dat$description)
+		
+	remove <- grep("Catch|catch|0|Exploit", biomass_metrics, value = TRUE)		
+	
+	biomass_dat <- biomass_dat |>
+		filter(description %!in% remove)
+
+	"Red king crab - Norton Sound" %in% biomass_dat$stock_name
+	
+	biomass_dat |>
+		group_by(regional_ecosystem) |>
+		summarise(cont = n_distinct(stock_name))
 
  
   # black theme
