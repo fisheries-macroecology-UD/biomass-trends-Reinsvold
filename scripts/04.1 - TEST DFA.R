@@ -36,7 +36,7 @@ ungroup()
     y = dat_dfa,
     num_trends = 1,
     scale="zscore",
-    iter = 1000,
+    iter = 5000,
     chains = 4,
     thin = 1,
     data_shape = "long",
@@ -52,9 +52,10 @@ ungroup()
   is_converged(fit_long, threshold = 1.05)   # fit -> fit_long
 
   # plot
+  
   r <- rotate_trends(fit_long)
- 
-  plot_trends(r) + theme_bw()
+  yrs <- seq(min(biomass_dat$year), max(biomass_dat$year))
+  plot_trends(r, years = yrs) + theme_bw()
  
 # plot_fitted(fit) + theme_bw()
  
