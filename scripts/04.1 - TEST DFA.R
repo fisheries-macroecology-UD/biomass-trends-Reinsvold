@@ -1,16 +1,17 @@
 # DFA - looking for similar trends in biomass of groundfishes in EBS
 
 library(bayesdfa)
+options(mc.cores = parallel::detectCores())
 
 dir.create("output", showWarnings = FALSE)   # would break: no output folder for saveRDS/ggsave
 
 # get data set up
 
-# filter out stocks with fewer than 5 years of data
+# filter out stocks with fewer than 20 years of data
 dat_dfa <- biomass_dat %>%  
 select(common_name, year, value) |>     # commonname -> common_name
     group_by(common_name) %>%                 # commonname -> common_name
- filter(n() >= 5) |>
+ filter(n() >= 20) |>
 ungroup()
 
  dat_dfa <- dat_dfa |>
@@ -28,17 +29,19 @@ ungroup()
     mutate(ts = ts_id) |> select(time, ts, obs)                    # (the actual seq_len(P) fix)
 
   # set seed
-  set.seed(682)
+  set.seed(650)
  
   # fit model with one trend
   fit_long <- fit_dfa(
     y = dat_dfa,
     num_trends = 1,
     scale="zscore",
-    iter = 10000,
-    chains = 1,
+    iter = 1000,
+    chains = 4,
     thin = 1,
-    data_shape = "long")
+    data_shape = "long",
+    control = list(adapt_delta = 0.95, max_treedepth = 12)
+  )
    
   # save
   saveRDS(fit_long, file = "./output/fit_long.rds")
