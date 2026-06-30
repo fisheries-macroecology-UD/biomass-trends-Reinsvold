@@ -54,7 +54,8 @@ ungroup()
     thin = 1,
     data_shape = "long",
     estimation = "sampling",
-    control = (alpha_delta = 0.99))
+    control = list(adapt_delta = 0.99)
+    )
    
   # save
   saveRDS(fit_long, file = "./output/fit_long.rds")
