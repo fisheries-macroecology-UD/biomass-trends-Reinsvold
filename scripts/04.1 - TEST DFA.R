@@ -1,9 +1,19 @@
 # DFA - looking for similar trends in biomass of groundfishes in EBS
 
+# dat_dfa <- biomass_dat %>%
+  # filter(year > max(year) - 50) |>      # keep only the most recent 50 years
+  # select(common_name, year, value) |>
+  # group_by(common_name) %>%
+  # filter(n() >= 5) |>
+  # ungroup()
+
+# reg <- grep("Northeast|Alaska|Cal|Southeast|Gulf", ecosystems, value = TRUE)
+  # change for specific region
+
 library(bayesdfa)
 options(mc.cores = parallel::detectCores())
 
-dir.create("output", showWarnings = FALSE)   # would break: no output folder for saveRDS/ggsave
+# dir.create("output", showWarnings = FALSE)   # would break: no output folder for saveRDS/ggsave
 
 # get data set up
 
@@ -40,8 +50,7 @@ ungroup()
     chains = 4,
     thin = 1,
     data_shape = "long",
-    control = list(adapt_delta = 0.95, max_treedepth = 12)
-  )
+    estimation = "sampling")
    
   # save
   saveRDS(fit_long, file = "./output/fit_long.rds")
