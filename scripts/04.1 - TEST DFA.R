@@ -10,6 +10,9 @@
 # reg <- grep("Northeast|Alaska|Cal|Southeast|Gulf", ecosystems, value = TRUE)
   # change for specific region
 
+#biomass_dat <- biomass_dat |>
+  # filter(regional_ecosystem %in% reg)
+
 library(bayesdfa)
 options(mc.cores = parallel::detectCores())
 
@@ -50,7 +53,8 @@ ungroup()
     chains = 4,
     thin = 1,
     data_shape = "long",
-    estimation = "sampling")
+    estimation = "sampling",
+    control = (alpha_delta = 0.99))
    
   # save
   saveRDS(fit_long, file = "./output/fit_long.rds")
