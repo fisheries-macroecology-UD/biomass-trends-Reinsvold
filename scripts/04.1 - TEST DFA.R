@@ -1,39 +1,32 @@
 # DFA - looking for similar trends in biomass of groundfishes in EBS
 
-# dat_dfa <- biomass_dat %>%
-  # filter(year > max(year) - 50) |>      # keep only the most recent 50 years
-  # select(common_name, year, value) |>
-  # group_by(common_name) %>%
-  # filter(n() >= 5) |>
-  # ungroup()
-
-# reg <- grep("Northeast|Alaska|Cal|Southeast|Gulf", ecosystems, value = TRUE)
+reg <- grep("Alaska|Bering|Current", ecosystems, value = TRUE)
   # change for specific region
 
-#biomass_dat <- biomass_dat |>
-  # filter(regional_ecosystem %in% reg)
+biomass_dat <- biomass_dat |>
+  filter(subregion %in% reg)
 
 library(bayesdfa)
-options(mc.cores = parallel::detectCores())
+# options(mc.cores = parallel::detectCores())
 
-# dir.create("output", showWarnings = FALSE)   # would break: no output folder for saveRDS/ggsave
+# dir.create("output", showWarnings = FALSE)
 
 # get data set up
 
-# filter out stocks with fewer than 20 years of data
-dat_dfa <- biomass_dat %>%  
-select(common_name, year, value) |>     # commonname -> common_name
-    group_by(common_name) %>%                 # commonname -> common_name
- filter(n() >= 20) |>
+# filter out stocks with fewer than 5 years of data
+dat_dfa <- biomass_dat %>%
+select(common_name, year, value) |>
+    group_by(common_name) %>%   
+ filter(n() >= 5) |>
 ungroup()
 
  dat_dfa <- dat_dfa |>
         group_by(common_name, year) |>                                  # would break: collapse duplicate
         summarise(value = mean(value, na.rm = TRUE), .groups = "drop") |># stock-year rows (cause of seq_len(P))
-  arrange(common_name, year) |>           # commonname -> common_name
+  arrange(common_name, year) |>
         mutate(time = year - min(year) + 1) |>
-        arrange(common_name, time) |>           # commonname -> common_name
-        rename(obs = value, ts = common_name) |># commonname -> common_name
+        arrange(common_name, time) |>
+        rename(obs = value, ts = common_name) |>
   select(-year) |>
         ungroup()
 
@@ -49,8 +42,8 @@ ungroup()
     y = dat_dfa,
     num_trends = 1,
     scale="zscore",
-    iter = 5000,
-    chains = 4,
+    iter = 10000,
+    chains = 1,
     thin = 1,
     data_shape = "long",
     estimation = "sampling",
@@ -63,22 +56,24 @@ ungroup()
   fit_long <- readRDS( file = "./output/fit_long.rds")
  
   # check convergence
-  is_converged(fit_long, threshold = 1.05)   # fit -> fit_long
+  is_converged(fit_long, threshold = 1.2)
 
   # plot
   
   r <- rotate_trends(fit_long)
   yrs <- seq(min(biomass_dat$year), max(biomass_dat$year))
+  spp_names <- ts_key$ts[order(ts_key$ts_id)]
+  
   plot_trends(r, years = yrs) + theme_bw()
  
-# plot_fitted(fit) + theme_bw()
+  plot_fitted(fit_long, names = spp_names) + theme_bw()
  
-  plot_loadings(r) + theme_bw()
+  plot_loadings(r, names = spp_names) + theme_bw()
  
 #### plots ####
    
   ## trend plot ##
-  yrs <- sort(unique(biomass_dat$year))   # biomass_envr_dat -> biomass_dat (undefined object)
+  yrs <- sort(unique(biomass_dat$year))
  
 trends <- data.frame(
  t(r$trends_mean),
