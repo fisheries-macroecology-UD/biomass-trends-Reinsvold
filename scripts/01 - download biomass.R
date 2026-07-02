@@ -104,7 +104,21 @@
 		group_by(regional_ecosystem) |>
 		summarise(cont = n_distinct(stock_name))
 
+	# create new column of subregion to separate out AK stocks 
+	biomass_dat <- biomass_dat |>
+  	mutate(
+    	subregion = case_when(
+    	  regional_ecosystem == "California Current" ~ "California Current",
+    	  regional_ecosystem == "Gulf of Mexico" ~ "Gulf of Mexico",
+    	  regional_ecosystem == "Northeast Shelf" ~ "Northeast Shelf",
+    	  regional_ecosystem == "Southeast Shelf" ~ "Southeast Shelf",
+    	  regional_ecosystem == "Alaska Ecosystem Complex" &
+        	str_detect(stock_area, regex("Gulf", ignore_case = TRUE)) ~ "Gulf of Alaska",
+				regional_ecosystem == "Alaska Ecosystem Complex" ~ "Bering Sea"))
+    	  
+    	  
  
+
   # black theme
 	black_theme <- function(x = 12, y = 14, z = 16) {
   	theme(legend.position = "none",
@@ -122,3 +136,12 @@
   				plot.background = element_rect(fill = "black", color = "black"))
 		}
 	 
+	
+	biomass_dat |>
+  group_by(subregion) |>
+  summarise(
+    n_stocks = n_distinct(common_name),
+    .groups = "drop")
+	
+t  <- biomass_dat |>
+  distinct(common_name, stock_area, subregion, regional_ecosystem)
