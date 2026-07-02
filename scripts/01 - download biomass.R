@@ -117,7 +117,16 @@
 				regional_ecosystem == "Alaska Ecosystem Complex" ~ "Bering Sea"))
     	  
     	  
- 
+	biomass_dat <- biomass_dat |>
+	  mutate(
+	    value = dplyr::case_when(
+	      units %in% c("Metric Tons", "mt")   ~ value,
+	      units == "Thousand Metric Tons"     ~ value * 1000,
+	      units == "Million Pounds"           ~ value * 453.592,
+	      TRUE                                ~ value
+	    ),
+	    units = "Metric Tons"
+	  )
 
   # black theme
 	black_theme <- function(x = 12, y = 14, z = 16) {
