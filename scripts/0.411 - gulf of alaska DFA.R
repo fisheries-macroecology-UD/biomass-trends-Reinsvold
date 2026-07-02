@@ -1,6 +1,6 @@
 # DFA - looking for similar trends in biomass of groundfishes in EBS
 
-reg <- grep("Alaska", biomass$subregion, value = TRUE)
+reg <- grep("Alaska", biomass_dat$subregion, value = TRUE)
 # change for specific region
 
 biomass_dat <- biomass_dat |>
