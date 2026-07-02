@@ -1,7 +1,7 @@
 # DFA - looking for similar trends in biomass of groundfishes in EBS
 
-reg <- grep("Alaska|Bering|Current", subregion, value = TRUE)
-  # change for specific region
+reg <- grep("Alaska|Bering|Current|Canada", biomass$subregion, value = TRUE)
+# change for specific region
 
 biomass_dat <- biomass_dat |>
   filter(subregion %in% reg)
@@ -13,11 +13,11 @@ library(bayesdfa)
 
 # get data set up
 
-# filter out stocks with fewer than 5 years of data
+# filter out stocks with fewer than 10 years of data
 dat_dfa <- biomass_dat %>%
 select(common_name, year, value) |>
     group_by(common_name) %>%   
- filter(n() >= 5) |>
+ filter(n() >= 10) |>
 ungroup()
 
  dat_dfa <- dat_dfa |>
@@ -60,7 +60,7 @@ ungroup()
 
   # plot
   
-  r <- rotate_trends(fit_long)
+  r <- rotate_trends(fit_long, invert = TRUE)
   yrs <- seq(min(biomass_dat$year), max(biomass_dat$year))
   spp_names <- ts_key$ts[order(ts_key$ts_id)]
   
