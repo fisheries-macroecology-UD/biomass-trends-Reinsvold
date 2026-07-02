@@ -75,6 +75,10 @@ ungroup()
   r$trends_mean  <- -r$trends_mean
   r$trends_lower <- -r$trends_lower
   r$trends_upper <- -r$trends_upper
+
+  # flip loadings to match
+  r$Z_rot        <- -r$Z_rot
+  r$Z_rot_mean   <- -r$Z_rot_mean
   
   #Three primary output plots
   plot_trends(r, years = yrs) + theme_bw() + ggtitle("California Current Biomass Trend")
