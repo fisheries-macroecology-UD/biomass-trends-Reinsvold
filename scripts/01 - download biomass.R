@@ -154,3 +154,21 @@
 	
 t  <- biomass_dat |>
   distinct(common_name, stock_area, subregion, regional_ecosystem)
+
+
+# which stocks have more than one metric of biomass
+
+tmp <- biomass_dat |>
+  group_by(common_name, subregion) |>
+  summarise(n_metrics = n_distinct(description))
+
+tmp <- biomass_dat |>
+  group_by(common_name, subregion) |>
+  summarise(
+    n_metrics = n_distinct(description),
+    metrics = paste(
+      sort(unique(description)),
+      collapse = "; "
+    ),
+    .groups = "drop"
+  )
