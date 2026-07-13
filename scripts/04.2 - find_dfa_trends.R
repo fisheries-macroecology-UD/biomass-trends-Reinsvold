@@ -39,6 +39,6 @@ loo_west3 <- loo(fit_west3)
 loo_west
 loo_west2
 loo_west3
-
+#
 # ---- Compare ----
 loo::loo_compare(loo_west, loo_west2, loo_west3)
