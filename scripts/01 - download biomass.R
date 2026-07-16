@@ -104,7 +104,7 @@
 		group_by(regional_ecosystem) |>
 		summarise(cont = n_distinct(stock_name))
 
-	# create new column of subregion to separate out AK stocks 
+	# create new column of subregion to separate out Western stocks 
 	biomass_dat <- biomass_dat |>
   	mutate(
     	subregion = case_when(
@@ -115,8 +115,43 @@
     	  regional_ecosystem == "Alaska Ecosystem Complex" &
         	str_detect(stock_area, regex("Gulf", ignore_case = TRUE)) ~ "Gulf of Alaska",
 				regional_ecosystem == "Alaska Ecosystem Complex" ~ "Bering Sea"))
-    	  
-    	  
+	
+	# add Sablefish back to Bering Sea - biomass is split between subregions
+	biomass_dat <- bind_rows(
+	  biomass_dat,
+	  biomass_dat |>
+	    filter(common_name == "Sablefish", subregion == "Gulf of Alaska") |>
+	    mutate(subregion = "Bering Sea")
+	)
+	
+	# clearing up irrelevant stock metrics
+	biomass_dat <- biomass_dat |>
+	  # remove Hogfish age 1 biomass metric
+	  filter(!(common_name == "Hogfish" & description == "Biomass Age 1")) |>
+	  
+	  # remove Cabezon California "mean" biomass indicator
+	  filter(!(common_name == "Cabezon" & description == "Female Mature Biomass (Mean)")) |>
+	  
+	  # remove Atlantic cod, Western Gulf of Maine stock - eastern counterpart
+	  # not available; using GOM predecessor indicator for the whole region instead
+	  # also remove Eastern Georges Bank subset
+	  filter(!(common_name == "Atlantic cod" & stock_area == "Western Gulf of Maine")) |>
+	  filter(!(common_name == "Atlantic cod" & stock_area == "Eastern Georges Bank")) |>
+	
+	  # remove Black rockfish California stock - switched to state monitoring in 2017
+	  filter(!(common_name == "Black rockfish" & description == "Female Mature Biomass (Mean)")) |>
+	
+	  #remove Haddock eastern Geoerge Bank subset
+	  filter(!(common_name == "Haddock" & stock_area == "Eastern Georges Bank")) |>
+	
+	  #remove Winter flounder Gulf of Maine stock, no documentation reflecting spawning biomass calculations
+	  filter(!(common_name == "Winter flounder" & description == "Spawning Stock Biomass, Age 1")) |>
+	
+	  #remove Rex sole regional stocks - Gulf of Alaska already sums the other two stocks
+    filter(!(common_name == "Rex sole" & stock_area %in% c("Eastern Gulf of Alaska", "Western / Central Gulf of Alaska")))
+	  
+	
+  # convert all units to metric tons
 	biomass_dat <- biomass_dat |>
 	  mutate(
 	    value = dplyr::case_when(
@@ -127,30 +162,44 @@
 	    ),
 	    units = "Metric Tons"
 	  )
-
-  # black theme
-	black_theme <- function(x = 12, y = 14, z = 16) {
-  	theme(legend.position = "none",
-  				axis.text = element_text(size = x, colour = "grey"),
-  				axis.title = element_text(size = y, color = "white"),
-  				axis.line = element_line(color = "grey", linewidth = 1),
-  				axis.ticks = element_line(colour = "grey"),
-  				legend.title = element_text(color = "white"),
-  				legend.text = element_text(color = "white"),
-  				panel.background = element_rect(fill = "black"),
-					panel.grid = element_blank(),
-					panel.border =element_rect(fill = NA),
-					strip.background = element_rect(fill = "black", color = "black"),
-					strip.text = element_text(color = "white", size = z),
-  				plot.background = element_rect(fill = "black", color = "black"))
-		}
 	 
+	# make table to show stocks with 2+ biomass metrics, in the same region
+	t <- biomass_dat |>
+	  distinct(subregion, common_name, description, stock_area) |>
+	  group_by(subregion, common_name, stock_area) |>
+	  summarise(
+	    desc_stocks = paste0(
+	      description[1], " (",
+	      paste(sort(unique(stock_area)), collapse = "; "), ")"
+	    ),
+	    .groups = "drop_last"
+	  ) |>
+	  summarise(
+	    n = n_distinct(stock_area),
+	    descriptions = paste(desc_stocks, collapse = " | "),
+	    .groups = "drop"
+	  ) |>
+	  filter(n >= 2)
 	
-	biomass_dat |>
-  group_by(subregion) |>
-  summarise(
-    n_stocks = n_distinct(common_name),
-    .groups = "drop")
+	# in regions with multiple stocks, sum SSB
+	biomass_dat <- biomass_dat |>
+	  group_by(subregion, common_name) |>
+	  mutate(n_stocks = n_distinct(stock_area)) |>
+	  filter(n_stocks >= 2) |>
+	  group_by(subregion, common_name, year) |>
+	  filter(n_distinct(stock_area) == first(n_stocks)) |>
+	  summarise(
+	    value           = sum(value),
+	    n_stocks        = first(n_stocks),
+	    stock_name      = paste(first(common_name), first(subregion)),
+	    stock_area      = first(subregion),
+	    assessment_year = max(assessment_year),
+	    regional_ecosystem = first(regional_ecosystem),
+	    description     = "Spawning Stock Biomass",
+	    units           = "Metric Tons",
+	    scientific_name = first(scientific_name),
+	    jurisdiction    = first(jurisdiction),
+	    assessment_type = first(assessment_type),
+	    .groups = "drop"
+	  )
 	
-t  <- biomass_dat |>
-  distinct(common_name, stock_area, subregion, regional_ecosystem)
