@@ -20,6 +20,8 @@ select(common_name, year, value) |>
  filter(n() >= 10) |>
 ungroup()
 
+
+
  dat_dfa <- dat_dfa |>
         group_by(common_name, year) |>                                  # would break: collapse duplicate
         summarise(value = mean(value, na.rm = TRUE), .groups = "drop") |># stock-year rows (cause of seq_len(P))
