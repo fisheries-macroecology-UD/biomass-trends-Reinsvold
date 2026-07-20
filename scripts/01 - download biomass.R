@@ -124,6 +124,23 @@
 	    mutate(subregion = "Bering Sea")
 	)
 	
+	tmp <- biomass_dat |>
+	  distinct(subregion, common_name, description, stock_area) |>
+	  group_by(subregion, common_name, stock_area) |>
+	  summarise(
+	    desc_stocks = paste0(
+	      description[1], " (",
+	      paste(sort(unique(stock_area)), collapse = "; "), ")"
+	    ),
+	    .groups = "drop_last"
+	  ) |>
+	  summarise(
+	    n = n_distinct(stock_area),
+	    descriptions = paste(desc_stocks, collapse = " | "),
+	    .groups = "drop"
+	  ) |>
+	  filter(n >= 2)
+	
 	# clearing up irrelevant stock metrics
 	biomass_dat <- biomass_dat |>
 	  # remove Hogfish age 1 biomass metric
@@ -164,7 +181,8 @@
 	  )
 	 
 	# make table to show stocks with 2+ biomass metrics, in the same region
-	t <- biomass_dat |>
+	# shows stocks for which metrics/regions were added together
+	stock_summation <- biomass_dat |>
 	  distinct(subregion, common_name, description, stock_area) |>
 	  group_by(subregion, common_name, stock_area) |>
 	  summarise(
@@ -181,18 +199,23 @@
 	  ) |>
 	  filter(n >= 2)
 	
-	# in regions with multiple stocks, sum SSB
+	# sum SSB across stocks within a subregion; keep single-stock species as-is
 	biomass_dat <- biomass_dat |>
 	  group_by(subregion, common_name) |>
 	  mutate(n_stocks = n_distinct(stock_area)) |>
-	  filter(n_stocks >= 2) |>
+	  # for multi-stock species, only keep years where all stocks report
 	  group_by(subregion, common_name, year) |>
 	  filter(n_distinct(stock_area) == first(n_stocks)) |>
+	  group_by(subregion, common_name, year) |>
 	  summarise(
 	    value           = sum(value),
 	    n_stocks        = first(n_stocks),
-	    stock_name      = paste(first(common_name), first(subregion)),
-	    stock_area      = first(subregion),
+	    stock_name      = if (first(n_stocks) >= 2)
+	      paste(first(common_name), first(subregion))
+	    else first(stock_name),
+	    stock_area      = if (first(n_stocks) >= 2)
+	      first(subregion)
+	    else first(stock_area),
 	    assessment_year = max(assessment_year),
 	    regional_ecosystem = first(regional_ecosystem),
 	    description     = "Spawning Stock Biomass",
@@ -203,3 +226,7 @@
 	    .groups = "drop"
 	  )
 	
+	# filter west coast species to specific subregions
+	reg <- grep("Alaska|Bering|Current", biomass_dat$subregion, value = TRUE)
+	biomass_dat <- biomass_dat |>
+	  filter(subregion %in% reg)
