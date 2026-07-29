@@ -49,7 +49,7 @@ purrr::walk(regions, \(region) {
   set.seed(650)
   
   # fit model with one trend
-  fit_long <- fit_dfa(
+  fit_one_trend <- fit_dfa(
     y = dat_dfa,
     num_trends = 1,
     scale = "zscore",
@@ -63,7 +63,7 @@ purrr::walk(regions, \(region) {
   
   # save DFA model
   saveRDS(
-    fit_long,
+    fit_one_trend,
     file = paste0("./output/", region, ".rds")
   )
   
@@ -131,7 +131,7 @@ print(plots$loadings)
 # save them
 for (nm in names(plots)) {
   ggsave(
-    filename = paste0("./output/", region, "_", nm, ".png"),
+    filename = paste0("./output/", "one-trend", "_", region, "_", nm, ".png"),
     plot     = plots[[nm]],
     width    = 8, height = 5, dpi = 300, limitsize = FALSE
   )
