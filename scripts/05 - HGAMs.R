@@ -92,6 +92,8 @@
   concurvity(cc_mod_gs, full = TRUE)
   concurvity(cc_mod_s, full = TRUE)
   
+  gratia::draw(cc_mod_gs)
+  
   ## different wiggliness (GI vs i) --------------------------------------
   #
   ## GI: global trend plus stock deviations with individual wiggliness
@@ -233,6 +235,8 @@
   # compare
   AIC(bs_mod_g, bs_mod_gs, bs_mod_s)
   
+  gratia::draw(bs_mod_gs)
+  gratia::draw(bs_mod_s)
   
   ## GOA ----------------------------------------------------------
   
@@ -277,4 +281,69 @@
   
   # compare
   AIC(goa_mod_g, goa_mod_gs, goa_mod_s)
+  
+  gratia::draw(goa_mod_gs)
+  gratia::draw(goa_mod_s)
+  
+  # one HGAM for all regions ---------------------------------------------
+  
+  # sablefish was duplicated into Bering Sea earlier; keep only one copy for the model.
+  biomass_dat <- biomass_dat |>
+    filter(!(common_name == "Sablefish" & subregion == "Bering Sea"))
+  
+  biomass_dat <- biomass_dat |>
+    mutate(stock_id =
+             paste0(common_name, "_", subregion))
+  
+  biomass_dat$stock_id <- as.factor(biomass_dat$stock_id)
+  biomass_dat$subregion <- as.factor(biomass_dat$subregion)
+  
+  length(unique(biomass_dat$stock_id))
+  
+  biomass_dat |>
+    summarise(
+      n_nonpositive = sum(value <= 0, na.rm = TRUE),
+      n_nonfinite = sum(!is.finite(value)),
+      n_missing = sum(is.na(value))
+    )
+  
+  biomass_dat <- biomass_dat |>
+    filter(value > 0)
+
+  # shared regional trend: all subregions share the same temporal shape; subregions can differ in average level.
+  mod_shared <- gam(
+    log(value) ~
+      subregion +
+      s(year, bs = "tp", k = 5, m = 2) +
+      s(year, stock_id, bs = "fs", k = 5, m = 2),
+    data = biomass_dat,
+    method = "REML",
+    family = scat(link = "identity")
+  )
+  
+  # shared regional trend plus region-specific deviations: one overall temporal trend plus subregion deviations constrained to sum to zero. The complete trend for a subregion is the global smooth plus its deviation
+  mod_region <- gam(
+    log(value) ~
+      s(year, bs = "tp", k = 5, m = 2) +
+      s(subregion, year, bs = "sz", k = 5, m = 2, id = 1) +
+      s(year, stock_id, bs = "fs", k = 5, m = 2),
+    data = biomass_dat,
+    method = "REML",
+    family = scat(link = "identity")
+  )
+  
+  # separate regional trends without a global trend: each subregion has its own temporal trend, with one shared smoothing parameter, and there is no explicit global trend
+  mod_region_s <- gam(
+    log(value) ~ 
+      subregion +
+      s(year, by = subregion, bs = "tp", k = 5, m = 2, id = 1) +
+      s(year, stock_id, bs = "fs", k = 5, m = 2),
+    data = biomass_dat,
+    method = "REML",
+    family = scat(link = "identity")
+  )
+  
+  AIC(mod_shared)
+  AIC(mod_region)
+  AIC(mod_region_s)
   
