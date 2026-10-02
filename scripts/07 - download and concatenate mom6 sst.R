@@ -206,3 +206,14 @@
   saveRDS(
     temp_ne_annual,
     here("temp output", "mom6_ne_annual_sst.rds"))
+  
+  # West Coast of Canada
+  temp_can <- download_mom6(
+    mask_polygon = masks$Can,
+    url = nep_tos_url)
+  
+  temp_can_annual <- summarize_annual(temp_can)
+  
+  saveRDS(
+    temp_can_annual,
+    here("temp output", "mom6_can_annual_sst.rds"))
