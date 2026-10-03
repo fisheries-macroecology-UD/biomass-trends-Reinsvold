@@ -7,25 +7,25 @@
   library(here)
 
   # define NEP url
-  nep_tos_url <- paste0(
+  nep_tob_url <- paste0(
     "https://psl.noaa.gov/thredds/dodsC/",
     "Projects/CEFI/regional_mom6/cefi_portal/",
     "northeast_pacific/full_domain/hindcast/monthly/regrid/",
     "r20260701/",
-    "tos.nep.full.hcast.monthly.regrid.",
+    "tob.nep.full.hcast.monthly.regrid.",
     "r20260701.199301-202512.nc")
   
   # define NWA url
-  nwa_tos_url <- paste0(
+  nwa_tob_url <- paste0(
     "https://psl.noaa.gov/thredds/dodsC/",
     "Projects/CEFI/regional_mom6/cefi_portal/",
     "northwest_atlantic/full_domain/hindcast/monthly/regrid/",
     "r20250715/",
-    "tos.nwa.full.hcast.monthly.regrid.",
+    "tob.nwa.full.hcast.monthly.regrid.",
     "r20250715.199301-202312.nc")
   
   # function to download mom6
-  download_mom6 <- function(mask_polygon, url, variable = "tos") {
+  download_mom6 <- function(mask_polygon, url, variable = "tob") {
   
     nc <- nc_open(url)
     on.exit(nc_close(nc))
@@ -151,11 +151,11 @@
   summarize_annual <- function(data) {
   
     data |>
-      filter(!is.na(tos)) |>
+      filter(!is.na(tob)) |>
       mutate(year = year(date)) |>
       group_by(year) |>
       summarise(
-        mean_tos = mean(tos),
+        mean_tob = mean(tob),
         .groups = "drop")
   }
   
@@ -163,57 +163,57 @@
   # GOA
   temp_goa <- download_mom6(
     mask_polygon = masks$GOA,
-    url = nep_tos_url)
+    url = nep_tob_url)
   
   temp_goa_annual <- summarize_annual(temp_goa)
   
   saveRDS(
     temp_goa_annual,
-    here("temp output", "mom6_goa_annual_sst.rds"))
+    here("temp output", "mom6_goa_annual_bt.rds"))
   
   
   # EBS
   temp_ebs <- download_mom6(
     mask_polygon = masks$EBS,
-    url = nep_tos_url)
+    url = nep_tob_url)
   
   temp_ebs_annual <- summarize_annual(temp_ebs)
   
   saveRDS(
     temp_ebs_annual,
-    here("temp output", "mom6_ebs_annual_sst.rds"))
+    here("temp output", "mom6_ebs_annual_bt.rds"))
   
   
   # California Current
   temp_cc <- download_mom6(
     mask_polygon = masks$California_Current,
-    url = nep_tos_url)
+    url = nep_tob_url)
   
   temp_cc_annual <- summarize_annual(temp_cc)
   
   saveRDS(
     temp_cc_annual,
-    here("temp output", "mom6_cc_annual_sst.rds"))
+    here("temp output", "mom6_cc_annual_bt.rds"))
   
   
   # Northeast
   temp_ne <- download_mom6(
     mask_polygon = masks$Northeast,
-    url = nwa_tos_url)
+    url = nwa_tob_url)
   
   temp_ne_annual <- summarize_annual(temp_ne)
   
   saveRDS(
     temp_ne_annual,
-    here("temp output", "mom6_ne_annual_sst.rds"))
+    here("temp output", "mom6_ne_annual_bt.rds"))
   
   # West Coast of Canada
   temp_can <- download_mom6(
     mask_polygon = masks$Can,
-    url = nep_tos_url)
+    url = nep_tob_url)
   
   temp_can_annual <- summarize_annual(temp_can)
   
   saveRDS(
     temp_can_annual,
-    here("temp output", "mom6_can_annual_sst.rds"))
+    here("temp output", "mom6_can_annual_bt.rds"))
