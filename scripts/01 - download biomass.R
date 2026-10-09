@@ -230,3 +230,8 @@
 	reg <- grep("Alaska|Bering|Current", biomass_dat$subregion, value = TRUE)
 	biomass_dat <- biomass_dat |>
 	  filter(subregion %in% reg)
+	
+	# load Canadian biomass data
+  # log_blrp = log(biomass / limit reference point)
+	Canada <- readRDS("canadian_biomass.rds") |>
+	  rename(common_name = stock, value = log_blrp)
