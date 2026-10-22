@@ -8,7 +8,7 @@
   regions <- tribble(
     ~region,               ~invert, ~color,
     "Bering Sea",           FALSE,   "#E59F00",
-    "Gulf of Alaska",       TRUE,    "#009D73",
+    "Gulf of Alaska",       FALSE,    "#009D73",
     "Canada",               TRUE,    "#CC79A7",
     "California Current",   FALSE,   "#1D8FFF"
   )

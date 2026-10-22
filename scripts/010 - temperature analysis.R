@@ -9,7 +9,7 @@
     ~region,               ~invert, ~color,    ~bt_stub,
     "Canada",               TRUE,    "#CC79A7", "mom6_can",
     "Bering Sea",           FALSE,   "#E59F00", "mom6_ebs",
-    "Gulf of Alaska",       TRUE,    "#009D73", "mom6_goa",
+    "Gulf of Alaska",       FALSE,    "#009D73", "mom6_goa",
     "California Current",   FALSE,   "#1D8FFF", "mom6_cc"
   )
   region_cols <- set_names(regions$color, regions$region)
@@ -59,6 +59,12 @@
     unnest(paired) |>
     mutate(region = factor(region, levels = regions$region))
   
+  # R² per region
+  r2_labels <- plot_dat |>
+    group_by(region) |>
+    summarise(r2 = cor(mean_tob, anomaly, use = "complete.obs")^2) |>
+    mutate(label = paste0("italic(R)^2 == \"", sprintf("%.2f", r2), "\""))
+  
   # scatter in region color with lm fit and non-overlapping year labels
   bt_layers <- list(
     geom_hline(yintercept = 0, linewidth = 0.3, colour = ref_col),
@@ -68,6 +74,10 @@
     geom_text_repel(aes(label = year), size = 3, colour = "grey80",
                     segment.colour = "grey50", segment.size = 0.2,
                     max.overlaps = Inf, seed = 650),
+    geom_text(data = \(d) filter(r2_labels, region %in% d$region),
+              aes(x = -Inf, y = Inf, label = label),
+              inherit.aes = FALSE, parse = TRUE,
+              hjust = -0.15, vjust = 1.5, size = 3.5, colour = text_col),
     scale_colour_manual(values = region_cols, guide = "none"),
     scale_fill_manual(values = region_cols, guide = "none"),
     labs(
@@ -116,7 +126,7 @@
       r_squared = map_dbl(fit, \(f) summary(f)$r.squared),
       significant = ci_lower * ci_upper > 0
     ) |>
-    select(-data, -fit) |>ss
+    select(-data, -fit) |>
     arrange(region)
   
   print(lm_results)
